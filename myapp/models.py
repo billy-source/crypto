@@ -12,10 +12,22 @@ class UserProfile(models.Model):
 class Wallet(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="wallet")
     balance = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
-    currency = models.CharField(max_length=10, default="USD")  # Can set to KES for Mpesa
+    currency = models.CharField(max_length=10, default="USD")
+
+    def deposit(self, amount):
+        self.balance += amount
+        self.save()
+
+    def withdraw(self, amount):
+        if self.balance >= amount:
+            self.balance -= amount
+            self.save()
+            return True
+        return False
 
     def __str__(self):
         return f"{self.user.username} Wallet - {self.balance} {self.currency}"
+
 
 
 class Holding(models.Model):
