@@ -16,7 +16,7 @@ def signup(request):
 
     user = User.objects.create_user(username=username, email=email, password=password)
 
-    # Create wallet with $100,000
+   
     Wallet.objects.create(user=user, balance=100000.00, is_virtual=True)
 
     return Response({
