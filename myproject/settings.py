@@ -99,7 +99,14 @@ cloudinary.config(
 )
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOST', '127.0.0.1').split(',')
-API_KEY = config("BINANCE_API_KEY")
+DATABASES = {
+    'default': dj_database_url.config(
+       
+        default= os.getenv('DATABASE_URL'),
+        conn_max_age = 600
+    )
+       
+}
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
