@@ -4,8 +4,10 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from .models import Wallet
 from .serializers import UserSerializer, WalletSerializer
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 
-@api_view(['POST'])
+
 def signup(request):
     username = request.data.get('username')
     email = request.data.get('email')
@@ -39,8 +41,14 @@ def login(request):
     })
 
 @api_view(['GET'])
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def wallet_view(request, user_id):
     try:
+        if request.user.id != user_id:
+            return Response({"error": "You can only view your own wallet"}, status=403)
+
         wallet = Wallet.objects.get(user_id=user_id)
         return Response(WalletSerializer(wallet).data)
     except Wallet.DoesNotExist:
