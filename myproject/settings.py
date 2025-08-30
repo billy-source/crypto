@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'cloudinary',
     "rest_framework",
     'rest_framework.authtoken',
-    'trading',
+    
 
 ]
 
