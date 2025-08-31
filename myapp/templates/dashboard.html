@@ -1,108 +1,58 @@
-{% extends "base.html" %}
 {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Crypto Simulation Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold text-center mb-8">Beginner Simulation Dashboard</h1>
 
-{% block content %}
-<div class="container mt-5">
-    <h2 class="mb-4">📊 Dashboard</h2>
+        <!-- Wallet Section -->
+        <div class="bg-white shadow-lg rounded-2xl p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-2">Wallet Balance</h2>
+            <p class="text-2xl text-green-600 font-bold">${{ wallet.balance }}</p>
+        </div>
 
-    <!-- Wallet -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            Wallet Balance
+        <!-- Holdings Section -->
+        <div class="bg-white shadow-lg rounded-2xl p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Your Holdings</h2>
+            {% if holdings %}
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr class="bg-gray-200">
+                            <th class="p-2 text-left">Symbol</th>
+                            <th class="p-2 text-left">Amount</th>
+                            <th class="p-2 text-left">Value (USDT)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for h in holdings %}
+                        <tr class="border-b">
+                            <td class="p-2">{{ h.symbol }}</td>
+                            <td class="p-2">{{ h.amount }}</td>
+                            <td class="p-2">${{ h.value }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-gray-500">You have no holdings yet. Start trading!</p>
+            {% endif %}
         </div>
-        <div class="card-body">
-            <h4 id="wallet-balance">Loading...</h4>
-        </div>
-    </div>
 
-    <!-- Holdings -->
-    <div class="card mb-4">
-        <div class="card-header bg-success text-white">
-            My Holdings
-        </div>
-        <div class="card-body">
-            <table class="table table-striped" id="holdings-table">
-                <thead>
-                    <tr>
-                        <th>Crypto</th>
-                        <th>Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Filled by JS -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Trades -->
-    <div class="card mb-4">
-        <div class="card-header bg-dark text-white">
-            Recent Trades
-        </div>
-        <div class="card-body">
-            <table class="table table-bordered" id="trades-table">
-                <thead>
-                    <tr>
-                        <th>Type</th>
-                        <th>Symbol</th>
-                        <th>Amount</th>
-                        <th>Price</th>
-                        <th>Total</th>
-                        <th>Time</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Filled by JS -->
-                </tbody>
-            </table>
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <a href="{% url 'trade' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-2xl shadow-lg text-center">
+                🚀 Start Trading (Simulation)
+            </a>
+            <a href="{% url 'price' %}" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-2xl shadow-lg text-center">
+                📊 View Real-Time Prices
+            </a>
         </div>
     </div>
-</div>
-
-<script>
-    const userId = {{ request.user.id }};
-    const token = localStorage.getItem("access");  // JWT token from login
-
-    async function fetchData() {
-        // Wallet
-        let walletRes = await fetch(`/api/wallet/${userId}/`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        let wallet = await walletRes.json();
-        document.getElementById("wallet-balance").innerText = "$" + wallet.balance;
-
-        // Holdings
-        let holdingsRes = await fetch(`/api/holdings/${userId}/`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        let holdings = await holdingsRes.json();
-        let holdingsTable = document.querySelector("#holdings-table tbody");
-        holdingsTable.innerHTML = "";
-        holdings.forEach(h => {
-            holdingsTable.innerHTML += `<tr><td>${h.crypto_symbol}</td><td>${h.amount}</td></tr>`;
-        });
-
-        // Trades
-        let tradesRes = await fetch(`/api/trades/${userId}/`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        let trades = await tradesRes.json();
-        let tradesTable = document.querySelector("#trades-table tbody");
-        tradesTable.innerHTML = "";
-        trades.forEach(t => {
-            tradesTable.innerHTML += `
-                <tr>
-                    <td>${t.trade_type}</td>
-                    <td>${t.crypto_symbol}</td>
-                    <td>${t.amount}</td>
-                    <td>${t.price}</td>
-                    <td>${t.total_cost}</td>
-                    <td>${t.timestamp}</td>
-                </tr>`;
-        });
-    }
-
-    fetchData();
-</script>
-{% endblock %}
+</body>
+</html>
