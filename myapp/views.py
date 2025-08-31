@@ -23,6 +23,10 @@ def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
     return {"refresh": str(refresh), "access": str(refresh.access_token)}
 
+
+# -------------------------
+# AUTH
+# -------------------------
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def signup(request):
@@ -38,8 +42,8 @@ def signup(request):
 
     user = User.objects.create_user(username=username, email=email, password=password)
 
-    # NOTE: 
-    Wallet.objects.create(user=user, balance=Decimal("100000.00"))  
+    # NOTE: Free trial wallet for simulation
+    Wallet.objects.create(user=user, balance=Decimal("100000.00"))
 
     tokens = get_tokens_for_user(user)
     return Response(
@@ -65,6 +69,9 @@ def login(request):
     return Response({"message": "Login successful", "user": UserSerializer(user).data, "tokens": tokens}, status=200)
 
 
+# -------------------------
+# WALLET + HOLDINGS
+# -------------------------
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def wallet_view(request, user_id):
@@ -85,6 +92,9 @@ def holdings_view(request, user_id):
     return Response(HoldingSerializer(holdings, many=True).data, status=200)
 
 
+# -------------------------
+# SIMULATION TRADING
+# -------------------------
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def trade_view(request, user_id):
@@ -99,7 +109,6 @@ def trade_view(request, user_id):
     amount = req.validated_data["amount"]
     price = req.validated_data["price"]
 
-    
     if amount <= 0 or price <= 0:
         return Response({"error": "amount and price must be > 0"}, status=400)
 
@@ -131,7 +140,6 @@ def trade_view(request, user_id):
         wallet.balance = (wallet.balance + total_cost).quantize(Decimal("0.01"))
         wallet.save()
 
-   
     trade = Trade.objects.create(
         user=request.user,
         crypto_symbol=crypto_symbol,
@@ -148,4 +156,60 @@ def trade_view(request, user_id):
             "trade": TradeSerializer(trade).data,
         },
         status=201,
+    )
+
+
+# -------------------------
+# PRO DASHBOARD: DEPOSIT & WITHDRAW
+# -------------------------
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def deposit_view(request, user_id):
+    """Deposit real money (Pro Dashboard)"""
+    if request.user.id != user_id:
+        return Response({"error": "You can only deposit to your own account"}, status=403)
+
+    try:
+        amount = Decimal(request.data.get("amount", "0"))
+        if amount <= 0:
+            return Response({"error": "Amount must be greater than 0"}, status=400)
+    except (InvalidOperation, TypeError):
+        return Response({"error": "Invalid amount format"}, status=400)
+
+    wallet = get_object_or_404(Wallet, user_id=user_id)
+    wallet.balance = (wallet.balance + amount).quantize(Decimal("0.01"))
+    wallet.save()
+
+    # TODO: Integrate with M-Pesa API here
+
+    return Response(
+        {"message": f"Deposit of {amount} successful", "wallet_balance": str(wallet.balance)}, status=200
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def withdraw_view(request, user_id):
+    """Withdraw real money (Pro Dashboard)"""
+    if request.user.id != user_id:
+        return Response({"error": "You can only withdraw from your own account"}, status=403)
+
+    try:
+        amount = Decimal(request.data.get("amount", "0"))
+        if amount <= 0:
+            return Response({"error": "Amount must be greater than 0"}, status=400)
+    except (InvalidOperation, TypeError):
+        return Response({"error": "Invalid amount format"}, status=400)
+
+    wallet = get_object_or_404(Wallet, user_id=user_id)
+    if wallet.balance < amount:
+        return Response({"error": "Insufficient balance"}, status=400)
+
+    wallet.balance = (wallet.balance - amount).quantize(Decimal("0.01"))
+    wallet.save()
+
+    # TODO: Trigger M-Pesa payout here
+
+    return Response(
+        {"message": f"Withdrawal of {amount} successful", "wallet_balance": str(wallet.balance)}, status=200
     )
