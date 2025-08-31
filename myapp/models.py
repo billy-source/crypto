@@ -12,7 +12,7 @@ class UserProfile(models.Model):
 class Wallet(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="wallet")
     balance = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
-    currency = models.CharField(max_length=10, default="KES")  # Pro users use KES (M-PESA)
+    currency = models.CharField(max_length=10, default="USD")
 
     def deposit(self, amount):
         self.balance += amount
