@@ -41,3 +41,11 @@ class TradeRequestSerializer(serializers.Serializer):
     crypto_symbol = serializers.CharField()
     amount = serializers.DecimalField(max_digits=20, decimal_places=8)
     price = serializers.DecimalField(max_digits=20, decimal_places=2)
+
+class DepositSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(max_digits=15, decimal_places=2)
+    phone_number = serializers.CharField(max_length=15)  # M-PESA phone
+
+class WithdrawSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(max_digits=15, decimal_places=2)
+    phone_number = serializers.CharField(max_length=15)
