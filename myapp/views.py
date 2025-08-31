@@ -1,3 +1,5 @@
+import requests
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
@@ -23,6 +25,7 @@ def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
     return {"refresh": str(refresh), "access": str(refresh.access_token)}
 
+# ---------------- AUTH ----------------
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def signup(request):
@@ -38,7 +41,7 @@ def signup(request):
 
     user = User.objects.create_user(username=username, email=email, password=password)
 
-    # NOTE: 
+    # Create wallet with initial balance
     Wallet.objects.create(user=user, balance=Decimal("100000.00"))  
 
     tokens = get_tokens_for_user(user)
@@ -65,6 +68,7 @@ def login(request):
     return Response({"message": "Login successful", "user": UserSerializer(user).data, "tokens": tokens}, status=200)
 
 
+# ---------------- WALLET + HOLDINGS ----------------
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def wallet_view(request, user_id):
@@ -85,6 +89,7 @@ def holdings_view(request, user_id):
     return Response(HoldingSerializer(holdings, many=True).data, status=200)
 
 
+# ---------------- TRADE ----------------
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def trade_view(request, user_id):
@@ -99,7 +104,6 @@ def trade_view(request, user_id):
     amount = req.validated_data["amount"]
     price = req.validated_data["price"]
 
-    
     if amount <= 0 or price <= 0:
         return Response({"error": "amount and price must be > 0"}, status=400)
 
@@ -131,7 +135,6 @@ def trade_view(request, user_id):
         wallet.balance = (wallet.balance + total_cost).quantize(Decimal("0.01"))
         wallet.save()
 
-   
     trade = Trade.objects.create(
         user=request.user,
         crypto_symbol=crypto_symbol,
@@ -149,3 +152,54 @@ def trade_view(request, user_id):
         },
         status=201,
     )
+
+
+# ---------------- REAL-TIME BINANCE DATA ----------------
+BINANCE_BASE_URL = "https://api.binance.com/api/v3"
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def realtime_price(request, symbol):
+    """
+    Fetch real-time price from Binance (e.g., BTCUSDT, ETHUSDT).
+    """
+    try:
+        url = f"{BINANCE_BASE_URL}/ticker/price?symbol={symbol.upper()}"
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        return Response({"symbol": symbol.upper(), "price": data["price"]}, status=200)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def candlestick_data(request, symbol):
+    """
+    Fetch candlestick (kline) data for charting.
+    Default interval: 1m, limit: 50
+    """
+    try:
+        interval = request.GET.get("interval", "1m")  # default 1 minute
+        limit = int(request.GET.get("limit", 50))  # number of candles
+        url = f"{BINANCE_BASE_URL}/klines?symbol={symbol.upper()}&interval={interval}&limit={limit}"
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        raw = response.json()
+
+        # Transform Binance raw candle data
+        candles = []
+        for c in raw:
+            candles.append({
+                "time": datetime.fromtimestamp(c[0] / 1000).strftime("%Y-%m-%d %H:%M:%S"),
+                "open": c[1],
+                "high": c[2],
+                "low": c[3],
+                "close": c[4],
+                "volume": c[5],
+            })
+
+        return Response({"symbol": symbol.upper(), "candles": candles}, status=200)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
