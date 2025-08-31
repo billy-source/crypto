@@ -13,9 +13,7 @@ urlpatterns = [
     # Trading
     path("trade/<int:user_id>/", views.trade_view, name="trade"),
 
-    # Pro Dashboard (Deposit & Withdraw)
-    path("wallet/<int:user_id>/deposit/", views.deposit_view, name="deposit"),
-    path("wallet/<int:user_id>/withdraw/", views.withdraw_view, name="withdraw"),
+  
+
+
 ]
-
-
