@@ -1,39 +1,108 @@
-{% extends "myapp/base.html" %}
-{% block title %}Dashboard{% endblock %}
+{% extends "base.html" %}
+{% load static %}
+
 {% block content %}
-<h2>Beginner Dashboard</h2>
+<div class="container mt-5">
+    <h2 class="mb-4">📊 Dashboard</h2>
 
-<div class="card p-3 mb-3">
-    <h4>Wallet Balance: ${{ wallet.balance }}</h4>
+    <!-- Wallet -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            Wallet Balance
+        </div>
+        <div class="card-body">
+            <h4 id="wallet-balance">Loading...</h4>
+        </div>
+    </div>
+
+    <!-- Holdings -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            My Holdings
+        </div>
+        <div class="card-body">
+            <table class="table table-striped" id="holdings-table">
+                <thead>
+                    <tr>
+                        <th>Crypto</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Filled by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Trades -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            Recent Trades
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered" id="trades-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Symbol</th>
+                        <th>Amount</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Filled by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-<div class="mb-3">
-    <a href="{% url 'trade' %}" class="btn btn-warning">Make a Trade</a>
-</div>
+<script>
+    const userId = {{ request.user.id }};
+    const token = localStorage.getItem("access");  // JWT token from login
 
-<h4>Your Trades</h4>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Symbol</th>
-            <th>Type</th>
-            <th>Amount</th>
-            <th>Price</th>
-            <th>Created</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for trade in trades %}
-        <tr>
-            <td>{{ trade.crypto_symbol }}</td>
-            <td>{{ trade.trade_type }}</td>
-            <td>{{ trade.amount }}</td>
-            <td>${{ trade.price }}</td>
-            <td>{{ trade.created_at }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5">No trades yet.</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
+    async function fetchData() {
+        // Wallet
+        let walletRes = await fetch(`/api/wallet/${userId}/`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        let wallet = await walletRes.json();
+        document.getElementById("wallet-balance").innerText = "$" + wallet.balance;
+
+        // Holdings
+        let holdingsRes = await fetch(`/api/holdings/${userId}/`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        let holdings = await holdingsRes.json();
+        let holdingsTable = document.querySelector("#holdings-table tbody");
+        holdingsTable.innerHTML = "";
+        holdings.forEach(h => {
+            holdingsTable.innerHTML += `<tr><td>${h.crypto_symbol}</td><td>${h.amount}</td></tr>`;
+        });
+
+        // Trades
+        let tradesRes = await fetch(`/api/trades/${userId}/`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        let trades = await tradesRes.json();
+        let tradesTable = document.querySelector("#trades-table tbody");
+        tradesTable.innerHTML = "";
+        trades.forEach(t => {
+            tradesTable.innerHTML += `
+                <tr>
+                    <td>${t.trade_type}</td>
+                    <td>${t.crypto_symbol}</td>
+                    <td>${t.amount}</td>
+                    <td>${t.price}</td>
+                    <td>${t.total_cost}</td>
+                    <td>${t.timestamp}</td>
+                </tr>`;
+        });
+    }
+
+    fetchData();
+</script>
 {% endblock %}
