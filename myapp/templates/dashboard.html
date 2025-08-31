@@ -1,0 +1,39 @@
+{% extends "myapp/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h2>Beginner Dashboard</h2>
+
+<div class="card p-3 mb-3">
+    <h4>Wallet Balance: ${{ wallet.balance }}</h4>
+</div>
+
+<div class="mb-3">
+    <a href="{% url 'trade' %}" class="btn btn-warning">Make a Trade</a>
+</div>
+
+<h4>Your Trades</h4>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Symbol</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Price</th>
+            <th>Created</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for trade in trades %}
+        <tr>
+            <td>{{ trade.crypto_symbol }}</td>
+            <td>{{ trade.trade_type }}</td>
+            <td>{{ trade.amount }}</td>
+            <td>${{ trade.price }}</td>
+            <td>{{ trade.created_at }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No trades yet.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
