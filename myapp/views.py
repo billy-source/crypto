@@ -2,15 +2,11 @@ from decimal import Decimal, InvalidOperation
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
-
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-
-# If you use JWT:
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from .models import Wallet, Holding, Trade
 from .serializers import (
     UserSerializer,
@@ -22,12 +18,11 @@ from .serializers import (
     TradeRequestSerializer,
 )
 
-# -------- helper: JWT tokens --------
+
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
     return {"refresh": str(refresh), "access": str(refresh.access_token)}
 
-# -------------------- SIGNUP --------------------
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def signup(request):
@@ -43,8 +38,8 @@ def signup(request):
 
     user = User.objects.create_user(username=username, email=email, password=password)
 
-    # NOTE: your Wallet model has no `is_virtual`, so don't pass it.
-    Wallet.objects.create(user=user, balance=Decimal("100000.00"))  # currency defaults to "USD"
+    # NOTE: 
+    Wallet.objects.create(user=user, balance=Decimal("100000.00"))  
 
     tokens = get_tokens_for_user(user)
     return Response(
@@ -52,7 +47,7 @@ def signup(request):
         status=201,
     )
 
-# -------------------- LOGIN --------------------
+
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def login(request):
@@ -69,7 +64,7 @@ def login(request):
     tokens = get_tokens_for_user(user)
     return Response({"message": "Login successful", "user": UserSerializer(user).data, "tokens": tokens}, status=200)
 
-# -------------------- WALLET --------------------
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def wallet_view(request, user_id):
@@ -79,7 +74,7 @@ def wallet_view(request, user_id):
     wallet = get_object_or_404(Wallet, user_id=user_id)
     return Response(WalletSerializer(wallet).data, status=200)
 
-# -------------------- HOLDINGS --------------------
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def holdings_view(request, user_id):
@@ -89,7 +84,7 @@ def holdings_view(request, user_id):
     holdings = Holding.objects.filter(user_id=user_id)
     return Response(HoldingSerializer(holdings, many=True).data, status=200)
 
-# -------------------- TRADE (BUY/SELL) --------------------
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def trade_view(request, user_id):
@@ -104,7 +99,7 @@ def trade_view(request, user_id):
     amount = req.validated_data["amount"]
     price = req.validated_data["price"]
 
-    # make sure positive
+    
     if amount <= 0 or price <= 0:
         return Response({"error": "amount and price must be > 0"}, status=400)
 
@@ -136,7 +131,7 @@ def trade_view(request, user_id):
         wallet.balance = (wallet.balance + total_cost).quantize(Decimal("0.01"))
         wallet.save()
 
-    # Save trade with total_cost
+   
     trade = Trade.objects.create(
         user=request.user,
         crypto_symbol=crypto_symbol,
