@@ -4,7 +4,7 @@ from .models import Wallet, Holding, Trade
 
 # ---- User ----
 class UserSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta: 
         model = User
         fields = ["id", "username", "email"]
 
@@ -26,7 +26,6 @@ class TradeSerializer(serializers.ModelSerializer):
         model = Trade
         fields = ["id", "crypto_symbol", "trade_type", "amount", "price", "total_cost", "timestamp"]
 
-# ---------- Request serializers (validation) ----------
 class SignupSerializer(serializers.Serializer):
     username = serializers.CharField()
     email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
