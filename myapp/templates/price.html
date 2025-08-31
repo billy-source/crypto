@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Crypto Price</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            text-align: center;
+            padding: 20px;
+        }
+        .price-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: inline-block;
+            margin-bottom: 30px;
+        }
+        #price {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2ecc71;
+        }
+        canvas {
+            max-width: 800px;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+    <h2>Real-Time Crypto Price</h2>
+
+    <div class="price-box">
+        <p>Symbol: <span id="symbol">BTCUSDT</span></p>
+        <p>Price: <span id="price">Loading...</span></p>
+    </div>
+
+    <h3>Price Chart (Candlesticks)</h3>
+    <canvas id="priceChart"></canvas>
+
+    <script>
+        const symbol = "BTCUSDT";  // default symbol
+
+        // Fetch real-time price
+        async function fetchPrice() {
+            try {
+                let res = await fetch(`/api/realtime-price/${symbol}/`);
+                let data = await res.json();
+                document.getElementById("symbol").innerText = data.symbol;
+                document.getElementById("price").innerText = parseFloat(data.price).toFixed(2);
+            } catch (err) {
+                console.error(err);
+                document.getElementById("price").innerText = "Error loading";
+            }
+        }
+
+        // Fetch candlestick data
+        async function fetchCandles() {
+            try {
+                let res = await fetch(`/api/candlestick/${symbol}/?interval=1m&limit=30`);
+                let data = await res.json();
+
+                const labels = data.candles.map(c => c.time);
+                const prices = data.candles.map(c => parseFloat(c.close));
+
+                new Chart(document.getElementById("priceChart"), {
+                    type: "line",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: symbol + " Close Price",
+                            data: prices,
+                            borderColor: "blue",
+                            backgroundColor: "rgba(0,0,255,0.1)",
+                            fill: true,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            x: { display: true, title: { display: true, text: "Time" } },
+                            y: { display: true, title: { display: true, text: "Price (USDT)" } }
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error("Error loading chart", err);
+            }
+        }
+
+        // Auto-refresh price every 5 seconds
+        setInterval(fetchPrice, 5000);
+
+        // Initial load
+        fetchPrice();
+        fetchCandles();
+    </script>
+</body>
+</html>
