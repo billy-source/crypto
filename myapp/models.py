@@ -45,7 +45,7 @@ class Trade(models.Model):
     trade_type = models.CharField(max_length=4, choices=(("BUY", "Buy"), ("SELL", "Sell")))
     amount = models.DecimalField(max_digits=20, decimal_places=8)
     price = models.DecimalField(max_digits=20, decimal_places=2)
-    total_cost = models.DecimalField(max_digits=20, decimal_places=2)  # ✅ add this
+    total_cost = models.DecimalField(max_digits=20, decimal_places=2, default=0.00)  # ✅ fixed
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
