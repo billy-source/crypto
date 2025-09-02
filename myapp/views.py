@@ -1,14 +1,12 @@
-import requests
-from datetime import datetime
 from decimal import Decimal, InvalidOperation
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
+
 from .models import Wallet, Holding, Trade
 from .serializers import (
     UserSerializer,
@@ -18,188 +16,106 @@ from .serializers import (
     SignupSerializer,
     LoginSerializer,
     TradeRequestSerializer,
+    UserDashboardSerializer,
 )
 
 
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-    return {"refresh": str(refresh), "access": str(refresh.access_token)}
-
-# ---------------- AUTH ----------------
+# ---- Signup ----
 @api_view(["POST"])
 @permission_classes([AllowAny])
-def signup(request):
-    s = SignupSerializer(data=request.data)
-    s.is_valid(raise_exception=True)
+def signup_view(request):
+    serializer = SignupSerializer(data=request.data)
+    if serializer.is_valid():
+        username = serializer.validated_data["username"]
+        email = serializer.validated_data.get("email", "")
+        password = serializer.validated_data["password"]
 
-    username = s.validated_data.get("username")
-    email = s.validated_data.get("email")
-    password = s.validated_data.get("password")
+        if User.objects.filter(username=username).exists():
+            return Response({"error": "Username already exists"}, status=400)
 
-    if User.objects.filter(username=username).exists():
-        return Response({"error": "Username already exists"}, status=400)
+        user = User.objects.create_user(username=username, email=email, password=password)
+        Wallet.objects.create(user=user, balance=Decimal("10000.00"))  # give new users starting balance
 
-    user = User.objects.create_user(username=username, email=email, password=password)
+        return Response({"message": "User created successfully"}, status=201)
 
-    # Create wallet with initial balance
-    Wallet.objects.create(user=user, balance=Decimal("100000.00"))  
-
-    tokens = get_tokens_for_user(user)
-    return Response(
-        {"message": "Account created successfully!", "user": UserSerializer(user).data, "tokens": tokens},
-        status=201,
-    )
+    return Response(serializer.errors, status=400)
 
 
+# ---- Login ----
 @api_view(["POST"])
 @permission_classes([AllowAny])
-def login(request):
-    s = LoginSerializer(data=request.data)
-    s.is_valid(raise_exception=True)
-
-    username = s.validated_data.get("username")
-    password = s.validated_data.get("password")
-
-    user = authenticate(username=username, password=password)
-    if user is None:
+def login_view(request):
+    serializer = LoginSerializer(data=request.data)
+    if serializer.is_valid():
+        username = serializer.validated_data["username"]
+        password = serializer.validated_data["password"]
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)  # Django session login
+            return Response({"message": "Login successful"})
         return Response({"error": "Invalid credentials"}, status=400)
-
-    tokens = get_tokens_for_user(user)
-    return Response({"message": "Login successful", "user": UserSerializer(user).data, "tokens": tokens}, status=200)
+    return Response(serializer.errors, status=400)
 
 
-# ---------------- WALLET + HOLDINGS ----------------
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def wallet_view(request, user_id):
-    if request.user.id != user_id:
-        return Response({"error": "You can only view your own wallet"}, status=403)
-
-    wallet = get_object_or_404(Wallet, user_id=user_id)
-    return Response(WalletSerializer(wallet).data, status=200)
-
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def holdings_view(request, user_id):
-    if request.user.id != user_id:
-        return Response({"error": "You can only view your own holdings"}, status=403)
-
-    holdings = Holding.objects.filter(user_id=user_id)
-    return Response(HoldingSerializer(holdings, many=True).data, status=200)
-
-
-# ---------------- TRADE ----------------
+# ---- Logout ----
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def trade_view(request, user_id):
-    if request.user.id != user_id:
-        return Response({"error": "You can only trade from your own account"}, status=403)
-
-    req = TradeRequestSerializer(data=request.data)
-    req.is_valid(raise_exception=True)
-
-    trade_type = req.validated_data["trade_type"]
-    crypto_symbol = req.validated_data["crypto_symbol"]
-    amount = req.validated_data["amount"]
-    price = req.validated_data["price"]
-
-    if amount <= 0 or price <= 0:
-        return Response({"error": "amount and price must be > 0"}, status=400)
-
-    wallet = get_object_or_404(Wallet, user_id=user_id)
-    total_cost = (amount * price).quantize(Decimal("0.01"))
-
-    if trade_type == "BUY":
-        if wallet.balance < total_cost:
-            return Response({"error": "Insufficient balance"}, status=400)
-        wallet.balance = (wallet.balance - total_cost).quantize(Decimal("0.01"))
-        wallet.save()
-
-        holding, _ = Holding.objects.get_or_create(user=request.user, crypto_symbol=crypto_symbol)
-        holding.amount = (holding.amount + amount)
-        holding.save()
-
-    elif trade_type == "SELL":
-        try:
-            holding = Holding.objects.get(user=request.user, crypto_symbol=crypto_symbol)
-        except Holding.DoesNotExist:
-            return Response({"error": "You do not own this crypto"}, status=400)
-
-        if holding.amount < amount:
-            return Response({"error": "Not enough holdings to sell"}, status=400)
-
-        holding.amount = (holding.amount - amount)
-        holding.save()
-
-        wallet.balance = (wallet.balance + total_cost).quantize(Decimal("0.01"))
-        wallet.save()
-
-    trade = Trade.objects.create(
-        user=request.user,
-        crypto_symbol=crypto_symbol,
-        trade_type=trade_type,
-        amount=amount,
-        price=price,
-        total_cost=total_cost,
-    )
-
-    return Response(
-        {
-            "message": f"{trade_type} {amount} {crypto_symbol} @ {price} successful",
-            "wallet_balance": str(wallet.balance),
-            "trade": TradeSerializer(trade).data,
-        },
-        status=201,
-    )
+def logout_view(request):
+    logout(request)
+    return Response({"message": "Logged out successfully"})
 
 
-# ---------------- REAL-TIME BINANCE DATA ----------------
-BINANCE_BASE_URL = "https://api.binance.com/api/v3"
-
+# ---- Dashboard ----
 @api_view(["GET"])
-@permission_classes([AllowAny])
-def realtime_price(request, symbol):
-    """
-    Fetch real-time price from Binance (e.g., BTCUSDT, ETHUSDT).
-    """
-    try:
-        url = f"{BINANCE_BASE_URL}/ticker/price?symbol={symbol.upper()}"
-        response = requests.get(url, timeout=5)
-        response.raise_for_status()
-        data = response.json()
-        return Response({"symbol": symbol.upper(), "price": data["price"]}, status=200)
-    except Exception as e:
-        return Response({"error": str(e)}, status=500)
+@permission_classes([IsAuthenticated])
+def dashboard_view(request):
+    """Return combined User + Wallet + Holdings + Trades"""
+    serializer = UserDashboardSerializer(request.user)
+    return Response(serializer.data)
 
 
-@api_view(["GET"])
-@permission_classes([AllowAny])
-def candlestick_data(request, symbol):
-    """
-    Fetch candlestick (kline) data for charting.
-    Default interval: 1m, limit: 50
-    """
-    try:
-        interval = request.GET.get("interval", "1m")  # default 1 minute
-        limit = int(request.GET.get("limit", 50))  # number of candles
-        url = f"{BINANCE_BASE_URL}/klines?symbol={symbol.upper()}&interval={interval}&limit={limit}"
-        response = requests.get(url, timeout=5)
-        response.raise_for_status()
-        raw = response.json()
+# ---- Trade ----
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def trade_view(request):
+    serializer = TradeRequestSerializer(data=request.data)
+    if serializer.is_valid():
+        trade_type = serializer.validated_data["trade_type"]
+        crypto_symbol = serializer.validated_data["crypto_symbol"].upper()
+        amount = serializer.validated_data["amount"]
+        price = serializer.validated_data["price"]
 
-        # Transform Binance raw candle data
-        candles = []
-        for c in raw:
-            candles.append({
-                "time": datetime.fromtimestamp(c[0] / 1000).strftime("%Y-%m-%d %H:%M:%S"),
-                "open": c[1],
-                "high": c[2],
-                "low": c[3],
-                "close": c[4],
-                "volume": c[5],
-            })
+        wallet = request.user.wallet
+        total_cost = amount * price
 
-        return Response({"symbol": symbol.upper(), "candles": candles}, status=200)
-    except Exception as e:
-        return Response({"error": str(e)}, status=500)
+        if trade_type == "BUY":
+            if wallet.balance < total_cost:
+                return Response({"error": "Insufficient balance"}, status=400)
+            wallet.balance -= total_cost
+            wallet.save()
+
+            holding, _ = Holding.objects.get_or_create(user=request.user, crypto_symbol=crypto_symbol)
+            holding.amount += amount
+            holding.save()
+
+        elif trade_type == "SELL":
+            holding = Holding.objects.filter(user=request.user, crypto_symbol=crypto_symbol).first()
+            if not holding or holding.amount < amount:
+                return Response({"error": "Not enough holdings to sell"}, status=400)
+            holding.amount -= amount
+            holding.save()
+            wallet.balance += total_cost
+            wallet.save()
+
+        trade = Trade.objects.create(
+            user=request.user,
+            crypto_symbol=crypto_symbol,
+            trade_type=trade_type,
+            amount=amount,
+            price=price,
+            total_cost=total_cost,
+        )
+
+        return Response(TradeSerializer(trade).data, status=201)
+
+    return Response(serializer.errors, status=400)

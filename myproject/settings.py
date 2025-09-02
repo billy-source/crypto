@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     'myapp',
     'cloudinary',
     "rest_framework",
-    'rest_framework.authtoken',
+    
     
 
 ]
@@ -126,9 +126,12 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    )
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",  # ✅ only sessions
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",  # require login by default
+    ],
 }
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
