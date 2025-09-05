@@ -1,22 +1,14 @@
 {% extends 'base.html' %}
 {% block title %}Login - CryptoSim{% endblock %}
-
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <h2 class="mb-4">Login</h2>
-        <form method="post" action="{% url 'api_login' %}">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label>Username</label>
-                <input type="text" name="username" class="form-control" required>
-            </div>
-            <div class="mb-3">
-                <label>Password</label>
-                <input type="password" name="password" class="form-control" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Login</button>
-        </form>
-    </div>
+<div class="max-w-md mx-auto bg-white shadow p-6 rounded-lg mt-10">
+    <h2 class="text-2xl font-bold mb-4 text-center">Login</h2>
+    <form method="POST" action="{% url 'login' %}" class="space-y-4">
+        {% csrf_token %}
+        <input type="text" name="username" placeholder="Username" class="w-full border p-2 rounded" required>
+        <input type="password" name="password" placeholder="Password" class="w-full border p-2 rounded" required>
+        <button class="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600">Login</button>
+    </form>
+    <p class="mt-4 text-center text-gray-600">Don't have an account? <a href="{% url 'signup' %}" class="text-green-600">Signup</a></p>
 </div>
 {% endblock %}

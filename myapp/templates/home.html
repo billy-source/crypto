@@ -1,39 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CryptoSim</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            color: #1f2937;
-        }
-    </style>
-</head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center">
-
-    <div class="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full text-center">
-        <h1 class="text-3xl font-bold text-gray-800 mb-4">Welcome to CryptoSim</h1>
-        <p class="text-gray-600 mb-6">Your personal cryptocurrency trading simulator.</p>
-        
-        <!-- Corrected URL name to match myapp/urls.py -->
-        <a href="{% url 'beginner_dashboard' %}" class="inline-block w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-300 ease-in-out mb-2">
-            Go to Dashboard
-        </a>
-
-        <!-- Added links for Login and Signup -->
-        <a href="{% url 'login' %}" class="inline-block w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-4 rounded-lg transition duration-300 ease-in-out mb-2">
-            Log In
-        </a>
-
-        <a href="{% url 'signup' %}" class="inline-block w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-4 rounded-lg transition duration-300 ease-in-out">
-            Sign Up
-        </a>
-    </div>
-
-</body>
-</html>
+{% extends 'base.html' %}
+{% block title %}Home - CryptoSim{% endblock %}
+{% block content %}
+<div class="text-center mt-10">
+    <h2 class="text-3xl font-bold mb-4">Welcome to CryptoSim</h2>
+    <p class="text-gray-600 mb-6">Simulate crypto trading with virtual money. Learn risk-free!</p>
+    <a href="{% url 'signup' %}" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">Get Started</a>
+</div>
+{% endblock %}

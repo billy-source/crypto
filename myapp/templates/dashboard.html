@@ -1,29 +1,39 @@
 {% extends 'base.html' %}
 {% block title %}Dashboard - CryptoSim{% endblock %}
-
 {% block content %}
-<h2>Welcome, {{ user.username }}</h2>
-<div class="card mt-4">
-    <div class="card-body">
-        <h4>Wallet Balance: ${{ wallet.balance }}</h4>
-    </div>
+<h2 class="text-2xl font-bold mb-6">Dashboard</h2>
+
+<!-- Wallet Balance -->
+<div class="bg-white p-4 rounded shadow mb-6">
+    <h3 class="text-lg font-semibold">Wallet Balance</h3>
+    <p class="text-2xl text-green-600 font-bold">${{ wallet.balance }}</p>
 </div>
 
-<h3 class="mt-4">Holdings</h3>
-<ul class="list-group">
-    {% for holding in holdings %}
-        <li class="list-group-item">{{ holding.crypto_symbol }}: {{ holding.amount }}</li>
-    {% empty %}
-        <li class="list-group-item">No holdings yet.</li>
-    {% endfor %}
-</ul>
+<!-- Holdings -->
+<div class="bg-white p-4 rounded shadow mb-6">
+    <h3 class="text-lg font-semibold mb-2">Holdings</h3>
+    {% if holdings %}
+        <ul class="space-y-1">
+            {% for holding in holdings %}
+            <li>{{ holding.crypto_symbol }}: {{ holding.amount }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No holdings yet.</p>
+    {% endif %}
+</div>
 
-<h3 class="mt-4">Trade History</h3>
-<ul class="list-group">
-    {% for trade in trades %}
-        <li class="list-group-item">{{ trade.trade_type }} {{ trade.amount }} {{ trade.crypto_symbol }} @ ${{ trade.price }}</li>
-    {% empty %}
-        <li class="list-group-item">No trades yet.</li>
-    {% endfor %}
-</ul>
+<!-- Trades -->
+<div class="bg-white p-4 rounded shadow">
+    <h3 class="text-lg font-semibold mb-2">Recent Trades</h3>
+    {% if trades %}
+        <ul class="space-y-1">
+            {% for trade in trades %}
+            <li>{{ trade.trade_type }} {{ trade.amount }} {{ trade.crypto_symbol }} @ ${{ trade.price }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No trades yet.</p>
+    {% endif %}
+</div>
 {% endblock %}
