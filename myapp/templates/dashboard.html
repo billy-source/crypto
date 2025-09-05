@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - CryptoSim{% endblock %}
+
+{% block content %}
+<h2>Welcome, {{ user.username }}</h2>
+<div class="card mt-4">
+    <div class="card-body">
+        <h4>Wallet Balance: ${{ wallet.balance }}</h4>
+    </div>
+</div>
+
+<h3 class="mt-4">Holdings</h3>
+<ul class="list-group">
+    {% for holding in holdings %}
+        <li class="list-group-item">{{ holding.crypto_symbol }}: {{ holding.amount }}</li>
+    {% empty %}
+        <li class="list-group-item">No holdings yet.</li>
+    {% endfor %}
+</ul>
+
+<h3 class="mt-4">Trade History</h3>
+<ul class="list-group">
+    {% for trade in trades %}
+        <li class="list-group-item">{{ trade.trade_type }} {{ trade.amount }} {{ trade.crypto_symbol }} @ ${{ trade.price }}</li>
+    {% empty %}
+        <li class="list-group-item">No trades yet.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

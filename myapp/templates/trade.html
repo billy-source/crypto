@@ -1,10 +1,24 @@
-{% extends "myapp/base.html" %}
-{% block title %}Make Trade{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Trade{% endblock %}
 {% block content %}
 <h2>Make a Trade</h2>
-<form method="post">
+<form method="post" action="{% url 'api_trade' %}">
     {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-success">Submit Trade</button>
+    <div class="mb-3">
+        <label>Trade Type</label>
+        <select name="trade_type" class="form-select">
+            <option value="BUY">BUY</option>
+            <option value="SELL">SELL</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label>Crypto Symbol (e.g., BTC, ETH)</label>
+        <input type="text" name="crypto_symbol" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label>Amount</label>
+        <input type="number" step="0.0001" name="amount" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary w-100">Submit Trade</button>
 </form>
 {% endblock %}
