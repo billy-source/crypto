@@ -3,13 +3,13 @@
 {% block content %}
 <h2 class="text-2xl font-bold mb-6">Dashboard</h2>
 
-<!-- Wallet Balance -->
+
 <div class="bg-white p-4 rounded shadow mb-6">
     <h3 class="text-lg font-semibold">Wallet Balance</h3>
     <p class="text-2xl text-green-600 font-bold">${{ wallet.balance }}</p>
 </div>
 
-<!-- Holdings -->
+
 <div class="bg-white p-4 rounded shadow mb-6">
     <h3 class="text-lg font-semibold mb-2">Holdings</h3>
     {% if holdings %}
@@ -23,7 +23,7 @@
     {% endif %}
 </div>
 
-<!-- Trades -->
+
 <div class="bg-white p-4 rounded shadow">
     <h3 class="text-lg font-semibold mb-2">Recent Trades</h3>
     {% if trades %}

@@ -4,12 +4,14 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.decorators import api_view, permission_classes
+from django.db import transaction
+
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from django.db import transaction
 
 from .models import Wallet, Holding, Trade
 from .serializers import (
@@ -78,7 +80,7 @@ def login_view(request):
             user = authenticate(username=username, password=password)
 
             if user:
-                login(request, user)
+                login(request, user)  # session-based login
                 token, _ = Token.objects.get_or_create(user=user)
                 if request.content_type == "application/json":
                     return Response({"message": "Login successful", "token": token.key})
@@ -93,7 +95,10 @@ def login_view(request):
 # -------------------------
 def logout_view(request):
     if request.user.is_authenticated:
-        request.user.auth_token.delete()
+        try:
+            request.user.auth_token.delete()
+        except:
+            pass
         logout(request)
     return redirect("home")
 
@@ -123,8 +128,8 @@ def dashboard_view(request):
 # -------------------------
 # 6. Trade View (Form + API)
 # -------------------------
-@csrf_exempt
 @api_view(["GET", "POST"])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
 @permission_classes([IsAuthenticated])
 @transaction.atomic
 def trade_view(request):

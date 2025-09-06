@@ -3,7 +3,7 @@
 {% block content %}
 <div class="max-w-md mx-auto bg-white shadow p-6 rounded-lg">
     <h2 class="text-2xl font-bold mb-4 text-center">Place Trade</h2>
-    <form method="POST" action="{% url 'place_trade' %}" class="space-y-4">
+    <form method="POST" action="{% url 'trade' %}" class="space-y-4">
         {% csrf_token %}
         <select name="trade_type" class="w-full border p-2 rounded" required>
             <option value="BUY">Buy</option>
