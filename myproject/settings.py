@@ -12,7 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = False
 SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'False') == 'False'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOST', '127.0.0.1').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOST', '127.0.0.1,crypto-su1k.onrender.com').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -86,11 +86,11 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / "static"]  # ✅ Add static files directory
+STATICFILES_DIRS = [BASE_DIR / "static"]  # Add static files directory
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ✅ Auth redirects
+# Auth redirects
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "beginner_dashboard"
 LOGOUT_REDIRECT_URL = "login"
